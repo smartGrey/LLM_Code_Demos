@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SqlDialectMappings">
+    <file url="file://$PROJECT_DIR$/rag_system/bm25_match/bm25_match.py" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/rag_system/rag_system.py" dialect="MySQL" />
+  </component>
+</project>

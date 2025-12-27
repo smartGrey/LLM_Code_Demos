@@ -1,0 +1,89 @@
+version: '3.5'
+
+services:
+  etcd: # Milvus 的必须依赖，用于存储 Milvus 的元数据
+    container_name: etcd
+    image: quay.io/coreos/etcd:v3.5.5
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_ENABLE_V2=true
+    volumes:
+      - ./docker_volumes/etcd:/etcd/data
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd/data
+
+  minio: # Milvus 的必须依赖，用于 Milvus 数据的持久化存储
+    container_name: minio
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    volumes:
+      - ./docker_volumes/minio:/minio/data
+    command: minio server /minio/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  milvus:
+    container_name: milvus
+    image: milvusdb/milvus:v2.6.7 # 使用多架构镜像，Docker on M1 会自动拉取 ARM64 版本
+    command: ["milvus", "run", "standalone"]
+    environment:
+      - ETCD_ENDPOINTS=etcd:2379
+      - MINIO_ADDRESS=minio:9000
+    volumes:
+      - ./docker_volumes/milvus:/var/lib/milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - "etcd"
+      - "minio"
+
+  attu: # Milvus 的 Web UI
+    image: zilliz/attu:v2.6
+    ports:
+      - "8000:3000"
+    environment:
+      - MILVUS_URL=192.168.1.2:19530 # ipconfig -> en0
+    restart: unless-stopped
+
+  redis:
+    container_name: redis
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./docker_volumes/redis:/data
+    command: redis-server --requirepass 1234 # Redis 密码为 1234
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_server
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: edu_rag
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker_volumes/mysql:/var/lib/mysql  # 持久化数据存储
+    command: [
+      "--character-set-server=utf8mb4",
+      "--collation-server=utf8mb4_unicode_ci",
+      "--default-authentication-plugin=mysql_native_password"  # 兼容旧客户端
+    ]
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  default: # 其它服务会默认可以使用这个网络，等价于：networks: - milvus-network
+    name: milvus-network # 服务之间将通过这个网络互相通信

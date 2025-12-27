@@ -1,0 +1,21 @@
+{
+    "clarify_template": "您问的是疾病 '{Disease}' 的治疗方法吗？", 
+    "cql_templates": [
+        "MATCH(p:Disease) WHERE p.name='{Disease}' RETURN p.cure_way", 
+        "MATCH(p:Disease)-[r:recommand_drug]->(q:Drug) WHERE p.name='{Disease}' RETURN q.name", 
+        "MATCH(p:Disease)-[r:do_eat]->(q:Food) WHERE p.name='{Disease}' RETURN q.name"
+    ], 
+    "diagnosis_intent_confidence": 0.47203224897384644, 
+    "diagnosis_intent_name": "治疗方法", 
+    "final_reply_text": "您问的是疾病 '支气管炎' 的治疗方法吗？", 
+    "intent_strategy": "clarify", 
+    "prepared_answer": "'支气管炎' 疾病的治疗方式、推荐药物、推荐食物有：\n\n氨茶碱片、阿奇霉素片、阿奇霉素分散片、乳酸左氧氟沙星片、牛磺酸颗粒、喷托维林氯化铵糖浆、盐酸氨溴索口服溶液、阿奇霉素胶囊\n鸡肉、鸭肝、鹅肉、杏仁", 
+    "reject_text": "没有理解您说的意思哦~", 
+    "reply_template": "'{Disease}' 疾病的治疗方式、推荐药物、推荐食物有：", 
+    "slot_list": [
+        "Disease"
+    ], 
+    "slot_values": [
+        "支气管炎"
+    ]
+}
